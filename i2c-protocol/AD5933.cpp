@@ -21,33 +21,33 @@
  */
 int AD5933::getByte(byte address, byte *value) {
     // Request to read a byte using the address pointer register
-    Serial.println("getting byte");
+//    Serial.println("getting byte");
     Wire.beginTransmission(AD5933_ADDR);
-    Serial.println("beginning transmission");
+//    Serial.println("beginning transmission");
     Wire.write(ADDR_PTR);
-    Serial.println("writing pointer");
+//    Serial.println("writing pointer");
     Wire.write(address);
-    Serial.println("writing address");
+//    Serial.println("writing address");
     
 
     // Ensure transmission worked
     if (byte res = Wire.endTransmission() != I2C_RESULT_SUCCESS) {
         *value = res;
-        Serial.println("i2c result fail");
+//        Serial.println("i2c result fail");
         return false;
     }
 
-    Serial.println("i2c result success");
+//    Serial.println("i2c result success");
 
     // Read the byte from the written address
     Wire.requestFrom(AD5933_ADDR, 1);
-    Serial.println("request successful");
+//    Serial.println("request successful");
     if (Wire.available()) {
-      Serial.println("read successful");
+//      Serial.println("read successful");
         *value = Wire.read();
         return true;
     } else {
-      Serial.println("read fail");
+//      Serial.println("read fail");
         *value = 0;
         return false;
     }
@@ -108,16 +108,16 @@ bool AD5933::setControlMode(byte mode) {
 bool AD5933::reset() {
     // Get the current value of the control register
     byte val;
-    Serial.println("started reset");
+//    Serial.println("started reset");
     
     if (!getByte(CTRL_REG2, &val)) {
-        Serial.println("false");
+//        Serial.println("false");
         return false;
     }
     
     // Set bit D4 for restart
     val |= CTRL_RESET;
-    Serial.println("ready for return");
+//    Serial.println("ready for return");
     // Send byte back
     return sendByte(CTRL_REG2, val);
 }
@@ -412,10 +412,11 @@ bool AD5933::frequencySweep(int real[], int imag[], int n) {
          {
              return false;
          }
-
     // Perform the sweep. Make sure we don't exceed n.
     int i = 0;
     while ((readStatusRegister() & STATUS_SWEEP_DONE) != STATUS_SWEEP_DONE) {
+      delay(50);
+      
         // Make sure we aren't exceeding the bounds of our buffer
         if (i >= n) {
             return false;
@@ -458,7 +459,9 @@ bool AD5933::calibrate(double gain[], int phase[], int ref, int n) {
 
     // For each point in the sweep, calculate the gain factor and phase
     for (int i = 0; i < n; i++) {
-        gain[i] = (double)(1.0/ref)/sqrt(pow(real[i], 2) + pow(imag[i], 2));
+        //Page 17 of AD5933 datasheets: ref is impedance 
+        double magnitude = sqrt(pow(real[i], 2) + pow(imag[i], 2));
+        gain[i] = (double)(1.0/ref)/magnitude;
         // TODO: phase
     }
 

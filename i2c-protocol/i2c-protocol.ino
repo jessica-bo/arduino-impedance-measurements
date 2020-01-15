@@ -24,11 +24,11 @@ void setup(){
 
   // Perform initial configuration. Fail if any one of these fail.
 
-  if (AD5933::reset()) {
-    Serial.print("reset successful");
-  } else {
-    Serial.print("reset failed");
-  }
+//  if (AD5933::reset()) {
+//    Serial.print("reset successful");
+//  } else {
+//    Serial.print("reset failed");
+//  }
   
   if (!(AD5933::reset() &&
         AD5933::setInternalClock(true) &&
@@ -61,20 +61,36 @@ void setup(){
 }
 
 void loop(){
-   
-  int val; 
-
-  Wire.beginTransmission(address);
-//  Wire.write(0x80); //??
-  Wire.endTransmission();
-  Serial.print(5);
-
-//  Wire.requestFrom(address, bytes);
-//
-//  if (bytes <= Wire.available()) {
-//    val = Wire.read();
-//    Serial.println(val);
- 
-  delay(100);
-
+  frequencySweepEasy();
+  delay(5000);
 }
+
+void frequencySweepEasy() {
+    // Create arrays to hold the data
+    int real[NUM_INCR+1], imag[NUM_INCR+1];
+
+    // Perform the frequency sweep
+    if (AD5933::frequencySweep(real, imag, NUM_INCR+1)) {
+      // Print the frequency data
+      int cfreq = START_FREQ/1000;
+      for (int i = 0; i < NUM_INCR+1; i++, cfreq += FREQ_INCR/1000) {
+        // Print raw frequency data
+        Serial.print(cfreq);
+        Serial.print(": R=");
+        Serial.print(real[i]);
+        Serial.print("/I=");
+        Serial.print(imag[i]);
+
+        // Compute impedance
+        double magnitude = sqrt(pow(real[i], 2) + pow(imag[i], 2));
+        double impedance = 1/(magnitude*gain[i]);
+        Serial.print("  |Z|=");
+        Serial.println(impedance);
+      }
+      Serial.println("Frequency sweep complete!");
+    } else {
+      Serial.println("Frequency sweep failed...");
+    }
+}
+
+
