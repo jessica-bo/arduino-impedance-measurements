@@ -415,7 +415,7 @@ bool AD5933::frequencySweep(int real[], int imag[], int n) {
     // Perform the sweep. Make sure we don't exceed n.
     int i = 0;
     while ((readStatusRegister() & STATUS_SWEEP_DONE) != STATUS_SWEEP_DONE) {
-      delay(50);
+      delay(10);
       
         // Make sure we aren't exceeding the bounds of our buffer
         if (i >= n) {
@@ -461,7 +461,13 @@ bool AD5933::calibrate(double gain[], int phase[], int ref, int n) {
     for (int i = 0; i < n; i++) {
         //Page 17 of AD5933 datasheets: ref is impedance 
         double magnitude = sqrt(pow(real[i], 2) + pow(imag[i], 2));
+        Serial.print("|R|=");
+        Serial.print(real[i]);
+        Serial.print("   |Im|=");
+        Serial.print(imag[i]);
         gain[i] = (double)(1.0/ref)/magnitude;
+        Serial.print("  gain=");
+        Serial.println(gain[i]*1000000);
         // TODO: phase
     }
 
