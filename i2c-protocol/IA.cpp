@@ -1,12 +1,10 @@
 #include "IA.h"
 #include "AD5933.h"
 
-bool isSweeping(void);
-double impedance(int real, int imag, double gain);
-
 double IA::__gain;
 int IA::__ref_resist;
 int IA::__freq;
+bool IA::__debug;
 
 /**
  * initialize the analyzer, has to bed called before calling other functions
@@ -14,38 +12,40 @@ int IA::__freq;
  * @param ref_resist -the reference resistance use for calibration
  * @return 0 - if successful, ERROR_CODE otherwise (ERROR_CODE > 0)
  */
-int IA::init(int freq, int ref_resist) {
-  Serial.println("IA::init()");
+int IA::init(int freq, int ref_resist, bool debug) {
+  // IMPORTANT DONT MOVE. set __debug flag here cuz DLOG depends on it
+  __debug = debug;
+  DLOG("IA::init()");
   if (!AD5933::reset()) {
-    Serial.println("SETUP FAILED to set AD5933!");
+    DLOG("SETUP FAILED to set AD5933!");
     return ERROR_RESET;
   }
   if (!AD5933::setPowerMode(POWER_STANDBY)) {
-    Serial.println("SETUP FAILED to go on standby!");
+    DLOG("SETUP FAILED to go on standby!");
     return ERROR_STANDBY;
   }
   if (!AD5933::setInternalClock(true)) {
-    Serial.println("SETUP FAILED to set internal clock!");
+    DLOG("SETUP FAILED to set internal clock!");
     return ERROR_ICK;
   }
   if (!AD5933::setStartFrequency(freq)) {
-    Serial.println("SETUP FAILED to set start freq!");
+    DLOG("SETUP FAILED to set start freq!");
     return ERROR_START_FREQ;
   }
   if (!AD5933::setIncrementFrequency(1000)) {
-    Serial.println("SETUP FAILED to set increment freq!");
+    DLOG("SETUP FAILED to set increment freq!");
     return ERROR_INC_FREQ;
   }
   if (!AD5933::setNumberIncrements(10)) {
-    Serial.println("SETUP FAILED to set number of incremements!");
+    DLOG("SETUP FAILED to set number of incremements!");
     return ERROR_NUM_INC;
   }
   if (!AD5933::setPGAGain(PGA_GAIN_X1)) {
-    Serial.println("SETUP FAILED to set pga gain!");
+    DLOG("SETUP FAILED to set pga gain!");
     return ERROR_PGA_GAIN;
   }
   if (!resetSweep()) {
-    Serial.println("SETUP FAILED to reset sweep!");
+    DLOG("SETUP FAILED to reset sweep!");
     return ERROR_RESET_SWEEP;
   }
   __ref_resist = ref_resist;
@@ -60,7 +60,7 @@ int IA::init(int freq, int ref_resist) {
  * @return true - if stored successfully, false otherwise
  */
 bool IA::readImp(double *imp) {
-//  Serial.println("readImp()");
+  DLOG("readImp()");
   int real, imag;
 
   if (!isSweeping()) {
@@ -68,7 +68,7 @@ bool IA::readImp(double *imp) {
   }
 
   if (!AD5933::getComplexData(&real, &imag)) {
-    Serial.println("could not read complex data");
+    DLOG("could not read complex data");
     return false;
   }
 
@@ -82,11 +82,11 @@ bool IA::readImp(double *imp) {
  */
 int IA::setFreq(int freq) {
    if (!AD5933::setPowerMode(POWER_STANDBY)) {
-    Serial.println("SETUP FAILED to go on standby!");
+    DLOG("SETUP FAILED to go on standby!");
     return ERROR_STANDBY;
   }
   if (!AD5933::setStartFrequency(freq)) {
-    Serial.println("SETUP FAILED to set start freq!");
+    DLOG("SETUP FAILED to set start freq!");
     return ERROR_START_FREQ;
   }
   resetSweep();
@@ -97,7 +97,7 @@ int IA::setFreq(int freq) {
  * reset the analyzer for sweeping
  */
 bool IA::resetSweep() {
-  Serial.println("IA::resetSweep()");
+  DLOG("IA::resetSweep()");
   // init start freq
   if (!AD5933::setControlMode(CTRL_INIT_START_FREQ)) {
     return false;
@@ -113,7 +113,7 @@ bool IA::resetSweep() {
  */
 bool IA::resetGain() {
   // TODO: get multiple points then take the average to increase accuracy
-  Serial.println("IA::getGain()");
+  DLOG("IA::getGain()");
   int real, imag;
   AD5933::getComplexData(&real, &imag);
   double magnitude = sqrt(pow(real, 2) + pow(imag, 2));
@@ -137,4 +137,10 @@ bool IA::isSweeping() {
 double IA::impedance(int real, int imag, double gain) {
   double magnitude = sqrt(pow(real, 2) + pow(imag, 2));
   return 1 / (magnitude * gain);
+}
+
+void IA::DLOG(String msg) {
+  if (__debug) {
+    Serial.println(msg);
+  }
 }

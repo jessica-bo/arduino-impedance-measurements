@@ -16,7 +16,7 @@
 
 class IA {
   public:
-    static int init(int, int);
+    static int init(int, int, bool);
     static bool readImp(double *);
     static int setFreq(int);
 
@@ -24,10 +24,12 @@ class IA {
     static double __gain;
     static int __ref_resist;
     static int __freq;
+    static bool __debug;
     static bool resetSweep();
     static bool resetGain();
     static bool isSweeping(void);
     static double impedance(int, int, double);
+    static void DLOG(String);
 };
 
 #endif // IA_H

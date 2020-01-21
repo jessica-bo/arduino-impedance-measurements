@@ -4,12 +4,14 @@
 
 #define FREQ  (10000)
 #define REF_RESIST  (10000)
+// will print debug log messages to Serial Monitor if set to true
+#define DEBUG true
 
 void setup() {
   Wire.begin();
   Serial.begin(9600);
   Serial.println("AD5933 Test Started!");
-  IA::init(FREQ, REF_RESIST);
+  IA::init(FREQ, REF_RESIST, DEBUG);
 }
 
 void loop() {
