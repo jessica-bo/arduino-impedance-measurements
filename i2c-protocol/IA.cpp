@@ -1,15 +1,6 @@
 #include "IA.h"
 #include "AD5933.h"
 
-#define ERROR_RESET 1
-#define ERROR_STANDBY 2
-#define ERROR_ICK 3
-#define ERROR_START_FREQ 4
-#define ERROR_INC_FREQ 5
-#define ERROR_NUM_INC 6
-#define ERROR_PGA_GAIN 7
-#define ERROR_RESET_SWEEP 8
-
 bool isSweeping(void);
 double impedance(int real, int imag, double gain);
 
@@ -69,7 +60,7 @@ int IA::init(int freq, int ref_resist) {
  * @return true - if stored successfully, false otherwise
  */
 bool IA::readImp(double *imp) {
-  Serial.println("readImp()");
+//  Serial.println("readImp()");
   int real, imag;
 
   if (!isSweeping()) {
@@ -85,6 +76,10 @@ bool IA::readImp(double *imp) {
   *imp = impedance(real, imag, __gain);
 }
 
+/**
+ * change the frequency of the IA
+ * @param freq - frequency to change to
+ */
 int IA::setFreq(int freq) {
    if (!AD5933::setPowerMode(POWER_STANDBY)) {
     Serial.println("SETUP FAILED to go on standby!");
@@ -117,6 +112,7 @@ bool IA::resetSweep() {
  * get the gain of the circuit
  */
 bool IA::resetGain() {
+  // TODO: get multiple points then take the average to increase accuracy
   Serial.println("IA::getGain()");
   int real, imag;
   AD5933::getComplexData(&real, &imag);
@@ -128,7 +124,7 @@ bool IA::resetGain() {
 /**
  * @return true - if the analyzer is currently sweeping, false - if not
  */
-bool isSweeping() {
+bool IA::isSweeping() {
   return (AD5933::readStatusRegister() & STATUS_SWEEP_DONE) != STATUS_SWEEP_DONE;
 }
 
@@ -138,7 +134,7 @@ bool isSweeping() {
  * @param gain - the gain factor
  * @return the impedance value
  */
-double impedance(int real, int imag, double gain) {
+double IA::impedance(int real, int imag, double gain) {
   double magnitude = sqrt(pow(real, 2) + pow(imag, 2));
   return 1 / (magnitude * gain);
 }
