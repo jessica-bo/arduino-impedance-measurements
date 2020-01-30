@@ -16,14 +16,17 @@
 
 class IA {
   public:
-    static int init(int, int, bool);
+    static int init(unsigned long, unsigned long, bool);
     static bool readImp(double *);
     static int setFreq(int);
+    static double getGain();
+    static bool readReadImag(int*, int*);
+    static void setGain(double);
 
   private:
     static double __gain;
-    static int __ref_resist;
-    static int __freq;
+    static unsigned long __ref_resist;
+    static unsigned long __freq;
     static bool __debug;
     static bool resetSweep();
     static bool resetGain();
