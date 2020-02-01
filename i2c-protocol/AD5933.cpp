@@ -92,6 +92,7 @@ bool AD5933::setControlMode(byte mode) {
 
     // Set the top 4 bits appropriately
     val |= mode;
+    val |= 0b000000010;
 
     // Write back to the register
     return sendByte(CTRL_REG1, val);

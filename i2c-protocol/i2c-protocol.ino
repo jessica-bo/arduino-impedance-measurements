@@ -1,78 +1,72 @@
-#include <Wire.h> // I2C Arduino Library
 #include <Math.h>
 #include "IA.h"
 // will print debug log messages to Serial Monitor if set to true
 #define DEBUG false
-// Global variables //
-//
-//int n = 20;
-//double avg[n];
 
-long freqIntervals[] = {1000, 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000};
-const byte nIntervals = 11;
-//long freqIntervals[] = {10000, 20000, 30000, 40000};
-//const byte nIntervals = 4;
-const byte nSamples = 50;
+unsigned const long START_FREQ = 5000;
+unsigned const long FREQ_INCR = 5000;
+unsigned const int NUM_INCR = 20;
+unsigned const long REF_RESIST = 100000;
+const byte N_SAMPLES = 50;
 const byte BUTTON_PIN = 8;
 
+double gain[NUM_INCR];
+
 void setup() {
-  const unsigned long REF_RESIST = 100000;
   
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
   
-  Wire.begin();
+
   Serial.begin(9600);
-//  Serial.println("AD5933 Test Started!");
-//  Serial.print("Freq: ");
-//  Serial.print(freqIntervals[0]);
-//  Serial.println(" Hz");
-  IA::init(freqIntervals[0], REF_RESIST, DEBUG);
+  IA::init(START_FREQ, NUM_INCR, FREQ_INCR, REF_RESIST, DEBUG);
+
+  IA::startSweep();
+  int real, imag;
+  int num_gain_samples = 5;
+  for (int ni = 0; ni < NUM_INCR; ni++) {
+    double c_gain = 0;
+    for (int gi = 0; gi < num_gain_samples; gi++) {      
+      IA::readReadImag(&real, &imag);
+      c_gain += IA::calcGain(real, imag, REF_RESIST);
+      IA::repeatFreq();
+    }
+    gain[ni] = c_gain / num_gain_samples;
+    IA::nextFreq();
+  }
+  
+  Serial.println("...............DONE SETUP AND CALIBRATION...............");
 }
 
 void loop() {
-  double gain[nIntervals];
-  digitalWrite(LED_BUILTIN, LOW);
-  
-  for (int ni = 0; ni < nIntervals; ni++) {
-    IA::setFreq(freqIntervals[ni]);
-    gain[ni] = IA::getGain();
-  }
-
   // light up LED to indicate calibration done
   digitalWrite(LED_BUILTIN, HIGH);
   waitForButton();
   digitalWrite(LED_BUILTIN, LOW);
 
+  IA::startSweep();
   int real, imag;
-  for (int ni = 0; ni < nIntervals; ni++) {
-    IA::setFreq(freqIntervals[ni]);
-    IA::setGain(gain[ni]);
-    for (int ns = 0; ns < nSamples; ns++) {
+  unsigned long curr_freq = START_FREQ;
+  for (int ni = 0; ni < NUM_INCR; ni++) {
+    for (int ns = 0; ns < N_SAMPLES; ns++) {
       IA::readReadImag(&real, &imag);
-      double magnitude = sqrt(pow(real, 2) + pow(imag, 2));
-      double imp = 1 / (magnitude * gain[ni]);
-      printRow(freqIntervals[ni], real, imag, imp, gain[ni]);
+      double imp = IA::calcImpedance(real, imag, gain[ni]);
+      printRow(curr_freq, real, imag, imp, gain[ni]);
+      IA::repeatFreq();
     }
+    IA::nextFreq();
+    curr_freq += FREQ_INCR;
+    delay(1000);
   }
+  Serial.println("...............DONE SWEEPING...............");
+}
 
-//    int n = 100;
-//    double imp;
-//    IA::readImp(&imp);
-//    double avg = imp;
-//    double maximp = imp;
-//    for (int i = 2; i < n+1; i++) {
-//      IA::readImp(&imp);
-//      avg = avg + (imp-avg)/i;
-//      maximp = fmax(maximp, imp);
-//    }
-//    
-//    Serial.print("avg impedance =");
-//    Serial.print(avg);
-//    Serial.print("\t");
-//    Serial.print("\t");
-//    Serial.print("max impedance =");
-//    Serial.println(maximp);
+void ledOn() {
+  digitalWrite(LED_BUILTIN, HIGH);
+}
+
+void ledOff() {
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 void waitForButton() {

@@ -13,25 +13,27 @@
 #define ERROR_NUM_INC 6
 #define ERROR_PGA_GAIN 7
 #define ERROR_RESET_SWEEP 8
+#define ERROR_SET_P2P 9
+
+#define CTRL_MODE_P2P_2000MV  0b00000000
+#define CTRL_MODE_P2P_200MV  0b00000001
+#define CTRL_MODE_P2P_400MV  0b00000010
+#define CTRL_MODE_P2P_100MV 0b00000011
 
 class IA {
   public:
-    static int init(unsigned long, unsigned long, bool);
+    static int init(unsigned long, unsigned int, unsigned long, unsigned long, bool);
     static bool readImp(double *);
-    static int setFreq(int);
-    static double getGain();
     static bool readReadImag(int*, int*);
-    static void setGain(double);
-
+    static bool startSweep();
+    static bool nextFreq();
+    static bool repeatFreq();
+    static double calcGain(int, int, long);
+    static double calcImpedance(int, int, double);
+    
   private:
-    static double __gain;
-    static unsigned long __ref_resist;
-    static unsigned long __freq;
     static bool __debug;
-    static bool resetSweep();
-    static bool resetGain();
     static bool isSweeping(void);
-    static double impedance(int, int, double);
     static void DLOG(String);
 };
 
